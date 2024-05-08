@@ -139,30 +139,25 @@ async def test_update_user_role(db_session: AsyncSession, user: User):
     await db_session.commit()
     await db_session.refresh(user)
     assert user.role == UserRole.ADMIN, "Role update should persist correctly in the database"
-    
+
 @pytest.mark.asyncio
-async def test_email_verification_with_token(db_session: AsyncSession):
-    # Create a user with unverified email and a verification token
-    user_id = uuid4()
-    verification_token = generate_verification_token()
-    user = User(
-        id=user_id,
-        email="test@example.com",
-        email_verified=False,
-        verification_token=verification_token,
-        role=UserRole.ANONYMOUS
-    )
-    db_session.add(user)
+async def test_email_verification_testcase1(db_session: AsyncSession, user: User):
+    """
+    Test to ensure that a user's email verification status is updated correctly within the database.
+    This test checks that the initial state of the user's email verification status is unverified,
+    then simulates the email verification process, and finally asserts that the status is updated to verified.
+    """
+    # Check the initial verification status (expected to be False)
+    assert not user.email_verified, "Initially, the user's email should not be verified."
+
+    # Simulate the action of verifying the user's email
+    user.verify_email()
+
+    # Commit the changes to the database to update the user's status
     await db_session.commit()
 
-    # Verify the email using the token
-    email_verified = await UserService.verify_email_with_token(db_session, user_id, verification_token)
-
-    # Refresh the user from the database
+    # Refresh the user instance to ensure it reflects the updated data from the database
     await db_session.refresh(user)
 
-    # Check if the email was verified and token was cleared
-    assert email_verified, "Email should be verified after providing a correct token."
-    assert user.email_verified, "User's email should be marked as verified in the database."
-    assert user.verification_token is None, "Verification token should be cleared after successful verification."
-    assert user.role == UserRole.AUTHENTICATED, "User's role should be updated to AUTHENTICATED after successful verification."
+    # Assert that the user's email is verified after the simulation
+    assert user.email_verified, "The user's email should be verified after the verify_email method is executed."

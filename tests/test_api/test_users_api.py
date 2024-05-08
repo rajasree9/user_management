@@ -217,3 +217,19 @@ async def test_list_users_unauthorized(async_client, user_token):
         headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+
+@pytest.mark.asyncio
+async def test_clear_github_url_test6(async_client, admin_user, admin_token):
+    # Set up data to clear the GitHub URL by assigning an empty string
+    updated_data = {
+        "email": f"updated_{admin_user.id}@example.com",
+        "github_profile_url": ""
+    }
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # Send PUT request to update the user
+    response = await async_client.put(f"/users/{admin_user.id}", json=updated_data, headers=headers)
+
+    # Ensure the update was successful and the GitHub URL was cleared
+    assert response.status_code == 200, "Update should succeed with a HTTP 200 status"
+    assert response.json().get("github_profile_url") is None, "Expected GitHub URL to be cleared to None"

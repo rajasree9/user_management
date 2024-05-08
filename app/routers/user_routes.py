@@ -88,7 +88,8 @@ async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, 
     """
     email_id = None
     if user_update.email:
-        email_id = user_update.emailuser_data = user_update.model_dump(exclude_unset=True)
+        email_id = user_update.email
+    user_data = user_update.model_dump(exclude_unset=True)
     updated_user = await UserService.update(db, email_id, user_id, user_data)
     if updated_user == 'email_exist':
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="email already exist")
@@ -260,7 +261,7 @@ async def update_user_profile(update: UserUpdate, db: AsyncSession = Depends(get
         return updated_user
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    
+
 @router.patch("/users/{user_id}/upgrade", response_model=UserResponse, tags=["User Management Requires (Admin or Manager Roles)"])
 async def upgrade_user_to_professional(user_id: UUID, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"])),email_service: EmailService = Depends(get_email_service)):
     try:
