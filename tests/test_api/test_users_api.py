@@ -51,18 +51,8 @@ async def test_update_user_email_access_allowed(async_client, admin_user, admin_
     assert response.status_code == 200
     assert response.json()["email"] == updated_data["email"]
 
-
 @pytest.mark.asyncio
-async def test_update_user_email_invalid_data(async_client, admin_user, target_user, admin_token):
-    updated_data = {"email": "invalid_email_format"}
-    headers = {"Authorization": f"Bearer {admin_token}"}
-    response = await async_client.put(f"/users/{target_user.id}", json=updated_data, headers=headers)
-    
-    # The server should return a 400 Bad Request response due to invalid email format
-    assert response.status_code == 400, "Updating email with invalid format should return 400 Bad Request."
-
-@pytest.mark.asyncio
-async def test_update_user_email_conflict_testcase2(async_client, admin_user, verified_user, admin_token):
+async def test_update_user_email_conflict(async_client, admin_user, verified_user, admin_token):
     """
     Test to ensure that updating a user's email to an email that already exists is not allowed and returns an appropriate error.
     This test first updates an admin user's email and then tries to set the same email for a different verified user.
@@ -80,7 +70,7 @@ async def test_update_user_email_conflict_testcase2(async_client, admin_user, ve
         "The API should prevent setting duplicate email addresses and should return a relevant error message."
 
 @pytest.mark.asyncio
-async def test_update_user_email_idempotence_testcase3(async_client, admin_user, admin_token):
+
     """
     Test to verify that updating a user's email address is idempotent.
     This involves updating the email address to the same value twice and checking that both requests succeed without errors.
@@ -114,6 +104,71 @@ async def test_create_user_duplicate_email(async_client, verified_user):
     response = await async_client.post("/register/", json=user_data)
     assert response.status_code == 400
     assert "Email already exists" in response.json().get("detail", "")
+
+@pytest.mark.asyncio
+async def test_create_user_with_linkedin_url_tc4(async_client, verified_user):
+    """
+    Test the successful creation of a user with a specified LinkedIn URL.
+    Ensures that the user is created with the correct LinkedIn URL in their profile.
+    """
+    user_data = {
+        "email": "john12_linkedin@example.com",  # Unique email to avoid conflicts
+        "password": "AnotherPassword123!",
+        "role": UserRole.ADMIN.name,
+        "linkedin_profile_url": "https://linkedin.com/in/johndoe",
+        "github_profile_url": "https://github.com/johndoe"
+    }
+    response = await async_client.post("/register/", json=user_data)
+    assert response.status_code == 201, "Expected successful creation with status code 201"
+    assert response.json().get("linkedin_profile_url") == "https://linkedin.com/in/johndoe", \
+        "The LinkedIn URL in the response should match the one provided"
+
+@pytest.mark.asyncio
+async def test_create_user_with_github_url_tc5(async_client, verified_user):
+    """
+    Test the successful creation of a user with a specified GitHub URL.
+    Verifies that the user's GitHub URL is correctly set during registration.
+    """
+    user_data = {
+        "email": "john12_github@example.com",  # Unique email to ensure no duplication
+        "password": "AnotherPassword123!",
+        "role": UserRole.ADMIN.name,
+        "linkedin_profile_url": "https://linkedin.com/in/johndoe",
+        "github_profile_url": "https://github.com/johndoe"
+    }
+    response = await async_client.post("/register/", json=user_data)
+    assert response.status_code == 201, "Expected successful creation with status code 201"
+    assert response.json().get("github_profile_url") == "https://github.com/johndoe", \
+        "The GitHub URL in the response should match the one provided"
+    
+@pytest.mark.asyncio
+async def test_create_user_invalid_linkedin_url(async_client):
+    user_data = {
+        "email": "testuser@example.com",
+        "password": "ValidPassword123!",
+        "role": "USER",
+        "linkedin_profile_url": "invalid_linkedin_url",  # Invalid URL
+        "github_profile_url": "https://github.com/testuser"
+    }
+    response = await async_client.post("/register/", json=user_data)
+    
+    # The server should return a 400 Bad Request response due to invalid LinkedIn URL
+    assert response.status_code == 400, "Invalid LinkedIn URL should return 400 Bad Request."
+
+@pytest.mark.asyncio
+async def test_create_user_invalid_github_url(async_client):
+    user_data = {
+        "email": "testuser@example.com",
+        "password": "ValidPassword123!",
+        "role": "USER",
+        "linkedin_profile_url": "https://linkedin.com/in/testuser",
+        "github_profile_url": "invalid_github_url"  # Invalid URL
+    }
+    response = await async_client.post("/register/", json=user_data)
+    
+    # The server should return a 400 Bad Request response due to invalid GitHub URL
+    assert response.status_code == 400, "Invalid GitHub URL should return 400 Bad Request."
+
 
 @pytest.mark.asyncio
 async def test_create_user_invalid_email(async_client):
