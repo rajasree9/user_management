@@ -73,10 +73,8 @@ class UserService:
                 new_user.verification_token = generate_verification_token()
 
             session.add(new_user)
-            if new_user.email_verified == False:
-                await email_service.send_verification_email(new_user)
             await session.commit()
-            return new_user
+
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
             return None
@@ -86,11 +84,7 @@ class UserService:
         try:
             # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
             validated_data = UserUpdate(**update_data).model_dump(exclude_unset=True)
-            if email_id:
-                existing_data = await cls.get_by_email(session,email_id)
-                print(f'existing data{existing_data}')
-                if existing_data.id != user_id:
-                    return 'email_exist'
+
             if 'password' in validated_data:
                 validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
             query = update(User).where(User.id == user_id).values(**validated_data).execution_options(synchronize_session="fetch")
@@ -175,8 +169,7 @@ class UserService:
         if user and user.verification_token == token:
             user.email_verified = True
             user.verification_token = None  # Clear the token once used
-            if user.role == UserRole.ANONYMOUS:
-                user.role = UserRole.AUTHENTICATED
+            user.role = UserRole.AUTHENTICATED
             session.add(user)
             await session.commit()
             return True
@@ -204,4 +197,4 @@ class UserService:
             session.add(user)
             await session.commit()
             return True
-        return False
+
