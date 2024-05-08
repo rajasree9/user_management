@@ -70,7 +70,7 @@ async def test_update_user_email_conflict(async_client, admin_user, verified_use
         "The API should prevent setting duplicate email addresses and should return a relevant error message."
 
 @pytest.mark.asyncio
-async def test_update_user_email_idempotence(async_client, admin_user, admin_token):
+
     """
     Test to verify that updating a user's email address is idempotent.
     This involves updating the email address to the same value twice and checking that both requests succeed without errors.
@@ -84,7 +84,7 @@ async def test_update_user_email_idempotence(async_client, admin_user, admin_tok
     # Repeat the update with the same email
     repeat_response = await async_client.put(f"/users/{admin_user.id}", json=update_data, headers=headers)
     assert repeat_response.status_code == 200, "The second update with the same email should also succeed, confirming idempotence."
-    
+
 @pytest.mark.asyncio
 async def test_delete_user(async_client, admin_user, admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
