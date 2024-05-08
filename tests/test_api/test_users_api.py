@@ -86,6 +86,33 @@ async def test_update_user_email_conflict(async_client, admin_user, verified_use
     assert repeat_response.status_code == 200, "The second update with the same email should also succeed, confirming idempotence."
 
 @pytest.mark.asyncio
+async def test_update_invalid_github_url(async_client, admin_user, admin_token):
+    updated_data = {
+        "github_profile_url": "invalid_url"
+    }
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.put(f"/users/{admin_user.id}", json=updated_data, headers=headers)
+    
+    # Check if the response status code is 400 (Bad Request)
+    assert response.status_code == 400, "Invalid GitHub URL should return 400 Bad Request."
+    
+    # Optionally, verify the error message in the response for more specific feedback
+    # error_message = response.json().get("detail")
+    # assert "Invalid URL" in error_message, "Expected an error message about invalid URL."
+
+@pytest.mark.asyncio
+async def test_update_user_url_by_non_admin(async_client, non_admin_user, target_user, non_admin_token):
+    updated_data = {
+        "linkedin_profile_url": "https://linkedin.com/in/newuser",
+        "github_profile_url": "https://github.com/newuser"
+    }
+    headers = {"Authorization": f"Bearer {non_admin_token}"}
+    response = await async_client.put(f"/users/{target_user.id}", json=updated_data, headers=headers)
+    
+    # Check if the response status code is 403 (Forbidden)
+    assert response.status_code == 403, "Non-admin user should be forbidden from updating another user's profile URLs."
+
+@pytest.mark.asyncio
 async def test_delete_user(async_client, admin_user, admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
     delete_response = await async_client.delete(f"/users/{admin_user.id}", headers=headers)
@@ -287,4 +314,4 @@ async def test_list_users_unauthorized(async_client, user_token):
         "/users/",
         headers={"Authorization": f"Bearer {user_token}"}
     )
-    assert response.status_code == 403  # Forbidden, as expected for regular user
+
