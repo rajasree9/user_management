@@ -142,6 +142,7 @@ async def test_update_user_role(db_session: AsyncSession, user: User):
 
 @pytest.mark.asyncio
 
+
     # Simulate the action of verifying the user's email
     user.verify_email()
 
